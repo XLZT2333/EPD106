@@ -1,0 +1,21 @@
+# Example updater-script: remove a misbehaving third-party package from /data
+# while keeping every other byte of user data intact.
+#
+# This is the data-preserving counterpart to "wipe data/factory reset".
+# Edit PKG to the package you want gone.
+#
+# NOTE: /data on these devices is f2fs on /dev/block/by-name/UDISK.
+
+ui_print("MTLFIX 1: mount /system (provides /system/bin/sh)");
+mount("ext4", "EMMC", "/dev/block/by-name/system", "/system");
+
+ui_print("MTLFIX 2: mount /data");
+mount("f2fs", "EMMC", "/dev/block/by-name/UDISK", "/data");
+
+ui_print("MTLFIX 3: snapshot before");
+run_program("/system/bin/sh", "-c", "ls -la /data/app > /cache/mtlfix.log 2>&1; ls -la /data/data >> /cache/mtlfix.log 2>&1");
+
+ui_print("MTLFIX 4: removing com.etang.mt_launcher");
+run_program("/system/bin/sh", "-c", "rm -rf /data/app/com.etang.mt_launcher-* /data/data/com.etang.mt_launcher; echo === after === >> /cache/mtlfix.log; ls -la /data/app >> /cache/mtlfix.log 2>&1; sync; echo MTLFIX-REMOVED >> /cache/mtlfix.log");
+
+ui_print("MTLFIX 5: done - safe to reboot");

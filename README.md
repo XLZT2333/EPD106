@@ -9,6 +9,17 @@
 
 ---
 
+## 仓库内容
+
+| 路径 | 说明 |
+|---|---|
+| `README.md` | 本文 |
+| `images/board_uart.jpg` | 主板调试串口焊盘照片（`S-TX` / `S-RX` / `GND` / `FEL`） |
+| `build_zips.py` | 生成 / 校验 testkey 签名刷机包（自包含，见第 6 节） |
+| `examples/remove-package-updater-script` | 示例 updater-script：只删指定第三方包，保留其余用户数据 |
+
+---
+
 ## 1. 场景：卡在开机动画，且 adb 永远 unauthorized
 
 安装第三方桌面（`com.etang.mt_launcher`，即"莓糖桌面"）并设为默认 HOME 之后：
@@ -96,6 +107,22 @@ AOSP testkey    sha256 = A4384BA815B9499A5CE349B4E33C1755278873FE2EAC150A068823F
 ```
 java -jar signapk-1.0.jar -w testkey.x509.pem testkey.pk8 in.zip out_signed.zip
 ```
+
+本仓库的 `build_zips.py` 把「拿模板 → 替换 updater-script → 签名 → 校验」串起来了：
+
+```
+build_zips.py \
+    --template kernel_flashing_template.zip \
+    --updater-script examples/remove-package-updater-script \
+    --java /path/to/jdk8/bin/java \
+    --signapk signapk-1.0.jar \
+    --cert testkey.x509.pem --key testkey.pk8 \
+    --out my_fix_signed.zip
+
+build_zips.py --verify my_fix_signed.zip     # 只校验
+```
+
+校验器会拒绝没有整包签名的 zip（例如未签名的模板），可作为负向对照。
 
 签名正确性校验（zip 注释应形如 `"signed by SignApk" + 0x00 + DER PKCS7`）：
 
